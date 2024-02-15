@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+</style>
+<head>
+</head>
+
+<body>
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v6.js"></script>
+
+<!-- Initialize a select button -->
+<select id="selectButton"></select>
+<p>
+資料來源。設計說明:
+<br>
+這張圖表是在列出從1990~2022年間，新加坡、日本、南韓、台灣的GDP比較。因為每個國家的人口數、量體是不一樣的，所以在視覺化上，我們讓y軸會隨著每個國家的GDP的量體而做彈性變動。還有一個選項是我們可以調整自從哪一年開始統計來看圖表。除此之外，我也有增加mouseover 的功能使使用者可以滑過知道某一年的GDP是多少。
+<br>
+<br>
+說明設計過程考量相關的經驗法則(課本第六章):
+<br>
+在設計過程中，我有考量到 Eyes beat memory 的經驗法則。即one graph instance per experimental condition、same spatial layout、color differently, by condition
+。用一樣的graph 設計，只是度量衡的不同來比較各國GDP的差別。
+<br>
+<br>
+說明設計選擇(課本第五章):
+<br>
+過程中，也許我可以把這四個國家的GDP都放在同一張圖，但由於每個國家量體差很大，因此如果這樣做，大的國家的GDP的量質一定比較大，在圖表呈現上會無法突出量體小的國家的GDP成長趨勢，使視覺上的重點會感覺只放在大國家上。因此我選擇這樣設計，把不同國家的GDP分開呈現。又時間上我除了長時間的GDP成長趨勢外，也想要聚焦於短時間內的成長趨勢。
+<br>
+<br>
+資料來源:https://en.wikipedia.org/wiki/List_of_countries_by_past_and_projected_GDP_(nominal)
+
+</p>
+<form id="mainForm" name="mainForm">
+  <label class="radio-inline">
+    <input type="radio" name="gender" value="1990" checked>since 1990
+  </label>
+  <label class="radio-inline">
+    <input type="radio" name="gender" value="2000">since 2000
+  </label>
+  <label class="radio-inline">
+    <input type="radio" name="gender" value="2010">since 2010
+  </label>
+</form>
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+<script>
+
+// set the dimensions and margins of the graph
+const margin = {top: 20, right: 30, bottom: 40, left: 60},
+    width = 460 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+const svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+
+svg.append("text")
+       .attr("transform", "translate(100,0)")
+       .attr("x", 20)
+       .attr("y", 5)
+       .attr("font-size", "24px")
+       .text("GDP of selected country")
+
+
+
+
+
+
+
+
+
+
+
+///////////////////////////////////
+//let txt = svg.append("text");
+//svg.on('mousemove', function () {
+//        //d3.pointer 會回傳陣列[X,Y]
+//        let pt = d3.pointer(event, svg.node())
+//        txt.attr('x', pt[0]) //取[x]
+//            .attr('y', pt[1]) //取[Y]
+//            .text(`X：${parseInt(pt[0])} | Y：${parseInt(pt[1])}`)
+//        console.log(pt)
+//    });
+
+
+
+
+///////////////////////////////
+
+
+
+//Read the data
+d3.csv("data.csv").then( function(data) {
+
+
+    var bisect = d3.bisector(function(d) { return d.year;}).left;
+    var focus = svg
+    .append('g')
+    .append('circle')
+      .style("fill", "none")
+      .attr("stroke", "black")
+      .attr('r', 8.5)
+      .style("opacity", 0)
+
+    var focusText = svg
+    .append('g')
+    .append('text')
+      .style("opacity", 0)
+      //.attr("text-anchor", "left")
+      //.attr("alignment-baseline", "middle")
+
+    function mouseover() {
+    focus.style("opacity", 1)
+    focusText.style("opacity",1)
+    }
+
+    function mouseout() {
+    focus.style("opacity", 0)
+    focusText.style("opacity", 0)
+    }
+
+    svg
+    .append('rect')
+    .style("fill", "none")
+    .style("pointer-events", "all")
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom)
+    .on('mouseover', mouseover)
+    .on('mousemove', mousemove)
+    .on('mouseout', mouseout);
+
+
+
+
+
+    
+
+    
+
+
+    
+
+
+
+    // List of groups (here I have one group per column)
+    const allGroup = new Set(data.map(d => d.name))
+
+    // add the options to the button
+    d3.select("#selectButton")
+      .selectAll('myOptions')
+     	.data(allGroup)
+      .enter()
+    	.append('option')
+      .text(function (d) { return d; }) // text showed in the menu
+      .attr("value", function (d) { return d; }) // corresponding value returned by the button
+
+    // A color scale: one color for each group
+    const myColor = d3.scaleOrdinal()
+      .domain(allGroup)
+      .range(d3.schemeSet2);
+
+    
+
+
+    var chec=d3.select("#selectButton").node().value;
+    var datee = document.querySelector('input[name = gender]:checked').value;
+
+
+
+
+
+
+    
+
+    // Add X axis --> it is a date format
+    var x = d3.scaleLinear()
+      .domain(d3.extent(data, function(d) { return d.year; }))
+      .range([ 0, width ]).nice();
+
+
+    //svg.append("g")
+    //  .attr("transform", `translate(0, ${height})`)
+    //  .call(d3.axisBottom(x).ticks(10));
+
+    let xAxis = d3.axisBottom(x)
+    let xAxisSvg = svg.append('g').attr("transform", `translate(0, ${height})`)
+    xAxisSvg.call(xAxis)
+
+
+    svg.append("text")
+    .attr("text-anchor", "end")
+    .attr("x", width)
+    .attr("y", height + margin.top + 20)
+    .text("Year");
+
+    // Add Y axis
+    var filter = data.filter(function(d){return d.name=="Singapore"});
+    var fil=filter;
+
+
+    var y = d3.scaleLinear()
+      .domain([0, d3.max(filter, function(d) { return +parseInt(d.n); })+100000])
+      .range([ height, 0 ]).nice();
+      
+
+    let yAxis = d3.axisLeft(y)
+    let yAxisSvg = svg.append('g').attr('class', 'axis')
+
+    yAxisSvg.call(yAxis)
+
+    svg.append("text")
+    .attr("text-anchor", "end")
+    //.attr("transform", "rotate(-50)")
+    .attr("x", 15)
+    .attr("y", -margin.top+11)
+    .text("GDP")
+
+
+
+    // Initialize line with first group of the list
+    const line = svg
+      .append('g')
+      .append("path")
+        .datum(fil.filter(function(d){return d.name=="Singapore"}))
+        .attr("d", d3.line()
+          .x(function(d) { return x(d.year) })
+          .y(function(d) { return y(+parseInt(d.n)) })
+        )
+        .attr("stroke", function(d){ return myColor("valueA") })
+        .style("stroke-width", 4)
+        .style("fill", "none")
+
+    // A function that update the chart
+    function update(selectedGroup,dateee) {
+
+      // Create new data with the selection?
+      //console.log(selectedGroup)
+
+      fil = data.filter(function(d){return d.year>=parseInt(dateee)});
+
+      var dataFilter = fil.filter(function(d){return d.name==selectedGroup});
+
+      //
+      x = d3.scaleLinear()
+      .domain(d3.extent(dataFilter, function(d) { return d.year; }))
+      .range([ 0, width ]).nice();
+
+      let xAxisNew = d3.axisBottom(x)
+      xAxisSvg.transition().call(xAxisNew)
+
+
+      //svg.append("g")
+      //.attr("transform", `translate(0, ${height})`)
+      //.call(d3.axisBottom(x).ticks(10));
+
+
+
+
+      //
+      y = d3.scaleLinear()
+      .domain([0, d3.max(dataFilter, function(d) { return +parseInt(d.n); })+100000])
+      .range([ height, 0 ]).nice();
+
+      let yAxisNew = d3.axisLeft(y)
+
+      yAxisSvg.transition().call(yAxisNew)
+
+
+
+
+      // Give these new data to update line
+      line
+          .datum(dataFilter)
+          .transition()
+          //.duration(1000)
+          .attr("d", d3.line()
+            .x(function(d) { return x(d.year) })
+            .y(function(d) { return y(+parseInt(d.n)) })
+          )
+          .attr("stroke", function(d){ return myColor(selectedGroup) })
+
+
+     
+;
+    }
+
+    // When the button is changed, run the updateChart function
+    d3.select("#selectButton").on("change", function(event,d) {
+        // recover the option that has been chosen
+        const selectedOption = d3.select(this).property("value");
+        datee = document.querySelector('input[name = gender]:checked').value;
+        // run the updateChart function with this selected option
+        update(selectedOption,datee);
+    })
+
+    
+
+    document.mainForm.onclick = function()
+    {
+    datee = document.querySelector('input[name = gender]:checked').value;
+    chec=d3.select("#selectButton").node().value;
+
+    update(chec,datee);
+    
+    }
+
+
+
+    function mousemove() {
+
+    var datee = document.querySelector('input[name = gender]:checked').value;
+    fil = data.filter(function(d){return d.year>=parseInt(datee)});
+
+    chec=d3.select("#selectButton").node().value;
+
+    const mydat = fil.filter(function(d){return d.name==chec});
+    let pt = d3.pointer(event, svg.node())
+    
+    //console.log(pt)
+    var x0 = x.invert(pt[0])
+    //console.log(x0)
+    var i = bisect(mydat, x0, 1);
+    var selectedData = mydat[i]
+    //console.log(selectedData)
+
+
+    focus
+      .attr("cx", x(parseInt(selectedData.year)))
+      .attr("cy", y(parseInt(selectedData.n)))
+    
+
+    focusText
+      .html(`${selectedData.year.toString()} :`+`\n ${selectedData.n}`)
+      .attr("x", x(parseInt(selectedData.year))+10)
+      .attr("y", y(parseInt(selectedData.n)))
+
+    //focus.attr("cx",pt[0]).attr("cy",pt[1])
+    //focusText.attr("x",pt[0]+15).attr("y",pt[1]).text(`X：${parseInt(pt[0])} | Y：${parseInt(pt[1])}`)
+    }
+
+})
+
+
+</script>
+</body>
