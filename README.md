@@ -5,3 +5,6 @@
 
 ## HW2
 ![image description](HW2/pic.jpg)
+
+## HW3
+![image description](HW3/pic.jpg)
