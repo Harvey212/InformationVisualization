@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重大事件對股市、交易量影響之視覺化分析</title>
+
+    <style>
+        html,
+        body {
+            background-color: #344648;
+            font-family: sans-serif;
+            font-weight: bold;
+            width: 100%;
+            height: 100%;
+        }
+
+        div {
+            border-radius: 6px;
+            background-color: #f4f2f3;
+            opacity: 1;
+            box-shadow: 8px 5px 5px black;
+        }
+
+        .earthMap {
+            padding-top: 8%;
+            width: 97%
+        }
+
+        .timeLine {
+            width: 63%;
+            float: left;
+            border: 0ch;
+            /* padding: 0px; */
+        }
+
+
+        .buttons {
+            width: 32%;
+            float: right;
+            margin-right: 1%;
+            /* border: 0ch; */
+            /* padding: 0px; */
+        }
+
+        button {
+            font-size: x-large;
+            margin: 5px;
+            background-color: #f4f2f3;
+            color: #344648;
+            border-radius: 3px;
+            border: 2px solid #344648;
+            transition-duration: 0.5s;
+            box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .lineChart {
+            width: 32%;
+            float: right;
+            margin-top: 1%;
+            margin-right: 1%;
+
+        }
+
+        iframe {
+            width: 59.5%;
+            margin-top: 1%;
+            float: left;
+            padding-left: 4%;
+            background-color: #f4f2f3;
+            border-radius: 6px;
+            box-shadow: 8px 5px 5px black;
+            border: 6px solid black;
+            visibility:hidden;
+        }
+
+        .description {
+            width: 32%;
+            float: right;
+            /* overflow-y: scroll; */
+            margin-top: 0.9%;
+            margin-right: 1%;
+            /* height: 30%; */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="earthMap"></div>
+    <div class="timeLine"></div>
+
+    <div class="buttons"></div>
+    <iframe src="test3\test3.html" width="0" height="0" id="myiframe"></iframe>
+    <div class="lineChart"></div>
+    <div class="description"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson.min.js"></script>
+    <script src="https://d3js.org/d3-geo-projection.v1.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js" id="v4"></script>
+    <script src="https://d3js.org/topojson.v1.min.js"></script>
+    <script>
+
+        drawEarthMap()
+        function drawEarthMap() {
+
+            d3.select(".earthMap").style("border", "6px solid black").style("padding", "4px")
+            // RWD 的svg 寬高
+            const width = parseInt(d3.select('.earthMap').style('width')),
+                height = width * 0.37;
+
+            const svg_earthMap = d3.select('.earthMap')
+                .append('svg')
+                .attr("class", "earthMap")
+                .attr('width', width)
+                .attr('height', height)
+
+
+
+            text_intro = svg_earthMap.append('g')
+                .append("text")
+                .text("本網站為重大事件對股市、交易量影響之視覺化分析")
+                .attr("x", width * 1.6 / 3)
+                .attr("y", height / 10)
+                .style('font-weight', 'bold')
+                .style("font-size", "30px")
+            svg_earthMap.append('g')
+                .append("text")
+                .text("選取國家以看更詳細資料")
+                .attr("x", width * 1.6 / 3)
+                .attr("y", height / 5)
+                .style('font-weight', 'bold')
+                .style("font-size", "20px")
+
+
+
+            const config = {
+                speed: 0.005,
+                verticalTilt: -30,
+                horizontalTilt: 0
+            }
+            let locations = [];
+
+            const markerGroup = svg_earthMap.append('g');
+            const projection = d3.geoOrthographic();
+            const initialScale = projection.scale();
+            const path = d3.geoPath().projection(projection);
+            const center = [width / 2, height / 2];
+
+            drawGlobe();
+            drawGraticule();
+            //enableRotation();
+
+
+
+
+            function drawGlobe() {
+                d3.queue()
+                    .defer(d3.json, 'https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-110m.json')
+                    .defer(d3.json, 'locations.json')
+                    .await((error, worldData, locationData) => {
+                        svg_earthMap.selectAll(".segment")
+                            .data(topojson.feature(worldData, worldData.objects.countries).features)
+                            .enter().append("path")
+                            .attr("class", "segment")
+                            .attr("d", path)
+                            .style("stroke", "#888")
+                            .style("stroke-width", "1px")
+                            .style("fill", (d, i) => '#e5e5e5')
+                            .style("opacity", ".6")
+                            .call(d3.drag().on('drag', dragged));
+                        locations = locationData;
+                        drawMarkers();
+                    });
+            }
+            var graticule;
+            function drawGraticule() {
+                graticule = d3.geoGraticule()
+                    .step([15, 15]);
+
+                svg_earthMap.append("path")
+                    .datum(graticule)
+                    .attr("class", "graticule")
+                    .attr("d", path)
+                    .style("fill", "#fff")
+                    .style("stroke", "#ccc")
+                    .call(d3.drag().on('drag', dragged));
+            }
+
+            function enableRotation() {
+                d3.timer(function (elapsed) {
+                    projection.rotate([config.speed * elapsed - 120, config.verticalTilt, config.horizontalTilt]);
+                    svg_earthMap.selectAll("path").attr("d", path);
+                    drawMarkers();
+                });
+            }
+
+            function drawMarkers() {
+                const markers = markerGroup.selectAll('circle')
+                    .data(locations);
+                markers
+                    .enter()
+                    .append('circle')
+                    .merge(markers)
+                    .attr('cx', d => projection([d.longitude, d.latitude])[0])
+                    .attr('cy', d => projection([d.longitude, d.latitude])[1])
+                    .attr('fill', d => {
+                        const coordinate = [d.longitude, d.latitude];
+                        gdistance = d3.geoDistance(coordinate, projection.invert(center));
+                        return gdistance > 1.57 ? 'none' : '#344648';
+                    })
+                    .attr('r', 7)
+                    .on("mouseover", function (d) {
+                        d3.select(this).attr('r', 12)
+                        //tooltip
+                        var tooltip = d3.select(".earthMap").append("div")
+                            .attr("class", "tooltip_earth")
+                            .style("opacity", 0)
+                        // .style('position', 'absolute')
+                        tooltip.transition()
+                            .duration(250)
+                            .style("opacity", .9)
+
+
+                        tooltip.style("border", "6px solid black").style("padding", "4px")
+                            .attr("class", "tooltip_earth")
+                            .html(`國家:${d.country}  <br>  重大事件:<br>${d.events[0].name}、${d.events[1].name} <br> 代表股票:<br>${d.dataset_stock[0].name}、${d.dataset_stock[1].name}`)
+                            .style('position', 'absolute')
+                            .style("top", height / 2 + "px")
+                            .style("left", width * 2 / 3 + "px")
+
+                    })
+                    .on("click", function (d) {
+                        d3.select("iframe").attr("width", parseInt(d3.select('.earthMap').style('width')))
+                        .attr("height",parseInt(d3.select('.earthMap').style('width'))*0.39)
+                        .style("visibility","visible")
+                        // visibility
+
+
+                        country = d.country
+
+                        events = d.events
+                        dataset_stock = d.dataset_stock
+
+                        event = events[0].brief
+                        stock = dataset_stock[0].brief
+
+                        drawTimeLine(events)
+                        //選擇第一個事件
+                        d3.select(".event_circle").attr('fill', "#ffbb98")
+
+                        drawButtons(dataset_stock)
+                        //選擇第一個股票
+                        d3.select(".stock_button").style("background-color", "#ffbb98")
+                        get_stock_data(country, stock, event)
+                        drawDescription(country, event)
+
+                        d3.select(".earthMap").remove();
+
+
+                    })
+                    .on("mouseout", function (d) {
+                        d3.select(this).attr('r', 7)
+                        d3.selectAll(".tooltip_earth").remove()
+                    });
+
+                markerGroup.each(function () {
+                    this.parentNode.appendChild(this);
+                });
+            }
+
+            //////////////////////////////////////////////////
+            var λ = d3.scaleLinear()
+                .domain([-width, width])
+                .range([-360, 360])
+
+            var φ = d3.scaleLinear()
+                .domain([-height, height])
+                .range([90, -90]);
+
+            var origin = {
+                x: 0,
+                y: 0
+            };
+
+            function dragged(d) {
+                var r = {
+                    x: λ((d.x = d3.event.x)),
+                    y: φ((d.y = d3.event.y))
+                };
+                projection.rotate([origin.x + r.x, origin.y + r.y]);
+                svg_earthMap.selectAll("path").attr("d", path);
+                drawMarkers();
+            };
+
+
+        }
+    </script>
+
+    <script src="https://d3js.org/d3.v5.min.js" id="v5"></script>
+    <script>
+
+        let dataset_stock = []
+        let data_stock = []
+        let events = []
+        let event = ""
+        let stock = ""
+        let country = ""
+
+        function get_events() {
+
+        }
+
+
+        async function get_stock_data(country, stock, event) {
+            data_stock = await d3.csv(country + "\\" + stock + "_" + event + ".csv")
+            drawLineChart(data_stock)
+        }
+
+        function drawTimeLine(event) {
+            //先移除原本的svg
+            d3.select(".timeLine svg").remove()
+            // RWD 的svg 寬高
+            const rwdSvgWidth = parseInt(d3.select('.timeLine').style('width'))
+            rwdSvgHeight = rwdSvgWidth * 0.1,
+                margin = rwdSvgWidth * 0.02;
+
+            const svg_timeline = d3.select('.timeLine')
+                .append('svg')
+                .attr("class", ".timeLine")
+                .attr('width', rwdSvgWidth)
+                .attr('height', rwdSvgHeight)
+
+            d3.selectAll("div").style("border", "6px solid black").style("padding", "4px")
+
+            // find data range
+            const xMin = d3.min(event, d => {
+                return (d['date']);
+            });
+            console.log(xMin)
+            const xMax = d3.max(event, d => {
+                return (d['date']);
+            });
+
+            //設定scale
+            const Scale = d3.scaleLinear()
+                .domain([xMin, xMax])
+                .range([margin * 3, rwdSvgWidth - margin * 3])
+                .nice(); // X 軸繪製的viewport起點終點(寬度) 
+            drawLine(event)
+            function drawLine(event) {
+
+                //繪製折線
+                const line = d3.line()
+                    .x(d => {
+                        return Scale(d['date']);
+                    })
+                    .y(rwdSvgHeight / 2)
+
+                console.log(line)
+
+                const lines = svg_timeline.append('path')
+                    .data([event])
+                    .attr("d", line)
+                    .attr("fill", "none")
+                    .attr("stroke", '#344648')//顏色可更換
+                    .attr("stroke-width", 10);
+
+                //加上年分
+                var text_time = svg_timeline.append('g').selectAll('text')
+                    .data(event)
+                    .enter()
+                    .append('text')
+                    .attr("x", function (d) {
+                        return Scale(d.date)
+                    })
+                    .attr("y", rwdSvgHeight / 3)
+                    .attr("text-anchor", "middle")
+                    .text(function (d) {
+                        return d.date
+                    })
+                    .style('font-weight', 'bold')
+                    .style("font-size", "13px")
+
+
+                //加上圓點
+                svg_timeline.append('g')
+                    .selectAll('circle')
+                    .data(event)
+                    .enter()
+                    .append('circle')
+                    .attr("class", "event_circle")
+                    .attr('r', 8)
+                    .attr('cx', function (d) {
+                        return Scale(d.date)
+                    })
+                    .attr('cy', rwdSvgHeight / 2)
+                    .attr('fill', "white")
+                    .attr("stroke-width", 3)
+                    .attr("stroke", "#ffbb98")
+                    .on("mouseover", function (d) {
+                        // 圓點放大
+                        d3.select(this)
+                            .attr("cursor", "pointer")
+                            .attr("r", 12)
+                            .attr("fill", function () {
+                                if (d3.select(this).attr("fill") == "#ffbb98") {
+                                    return "#ffbb98"
+                                }
+                                else {
+                                    return "white"
+                                }
+                            })
+                            .attr("stroke-width", 3)
+                            .attr("stroke", "#ffbb98")
+
+
+                        //動態加上事件
+                        svg_timeline.append('text')
+                            .attr("x", parseFloat(d3.select(this).attr("cx")))
+                            .attr("y", parseFloat(d3.select(this).attr("cy")) + margin * 3.5)
+                            .attr("text-anchor", "middle")
+                            .text(d.name)
+                            .style('font-weight', 'bold')
+                            // .style("font-size", "16px")
+                            .attr("id", "tooltip_timeline")
+
+                    })
+
+                    .on("click", function (d) {
+                        //先移除其他tooltip
+                        d3.select("#tooltip_selected_timeline").remove()
+                        //再新增tooltip
+                        svg_timeline.append('text')
+                            .attr("x", parseFloat(d3.select(this).attr("cx")))
+                            .attr("y", parseFloat(d3.select(this).attr("cy")) + margin * 3.5)
+                            .attr("text-anchor", "middle")
+                            .text(d.name)
+                            .style('font-weight', 'bold')
+                            // .style("font-size", "16px")
+                            .attr("id", "tooltip_selected_timeline")
+
+                        if (d3.select(this).attr("fill") != "#ffbb98") {
+                            d3.selectAll('.event_circle').attr("fill", "white")
+                            d3.select(this).attr("fill", "#ffbb98")
+
+                            event = d.brief
+
+                            get_stock_data(country, stock, event)
+
+                            drawDescription(country, event)
+
+                        }
+                    })
+
+                    .on("mouseout", function () {
+                        //移除其他tooltip
+                        d3.select("#tooltip_timeline").remove()
+                        // 圓點縮小
+                        d3.select(this)
+                            .attr("cursor", "default")
+                            .attr("r", 8)
+                            .attr('fill', function () {
+                                if (d3.select(this).attr("fill") == "#ffbb98") {
+                                    return "#ffbb98"
+                                }
+                                else {
+                                    return "white"
+                                }
+                            })
+                            .attr("stroke-width", 3)
+                            .attr("stroke", "#ffbb98")
+
+                    })
+                }
+            }
+        function drawButtons(dataset_stock) {
+            //先移除原本的svg
+            d3.select(".buttons div").remove()
+            //RWD 的svg 寬高
+            const rwdSvgWidth = parseInt(d3.select('.buttons').style('width'))
+            rwdSvgHeight = rwdSvgWidth * 0.2,
+                margin = rwdSvgWidth * 0.02;
+            //增加buttons的div
+            const div_buttons = d3.select('.buttons')
+                .append('div')
+                .attr("class", "button")
+
+            d3.select(".button").style("border", "0").style("padding", "0").style("box-shadow", "none")
+            //加上buttons
+            div_buttons.selectAll('.buttons')
+                .data(dataset_stock)
+                .enter()
+                .append("button")
+                .attr("class", "stock_button")
+                .style("background-color", null)
+                .text(function (d) {
+                    return d.name
+                })
+                .on("click", MouseClick)
+
+
+
+            function MouseClick(d) {
+
+
+                if (d3.select(this).style("background-color") != "#ffbb98") {
+                    d3.selectAll('button').style("background-color", null)
+                    d3.select(this).style("background-color", "#ffbb98")
+
+                    stock = d.brief
+                    get_stock_data(country, d.brief, event)
+                }
+
+
+            }
+
+
+
+
+        }
+
+
+        function drawLineChart(data) {
+            // let data = []
+            const parseTime = d3.timeParse("%Y年%m月%d日")
+            // data=data_stock
+            // console.log(data)
+
+            //先移除原本的svg
+            d3.select(".lineChart svg").remove();
+            // RWD 的svg 寬高
+            const rwdSvgWidth = parseInt(d3.select('.lineChart').style('width')),
+                rwdSvgHeight = rwdSvgWidth * 0.64,
+                margin = rwdSvgWidth * 0.02;
+
+
+            const svg_lineChart = d3.select('.lineChart')
+                .append('svg')
+                .attr("class", ".lineChart")
+                .attr('width', rwdSvgWidth)
+                .attr('height', rwdSvgHeight)
+
+            // find data range
+            const xMin = d3.min(data, d => {
+                return parseTime(d['日期']);
+            });
+            console.log(xMin)
+            const xMax = d3.max(data, d => {
+                return parseTime(d['日期']);
+            });
+            const yMin = d3.min(data, d => {
+                return parseFloat(d['收市'].replace(",", ""));
+            });
+            console.log(yMin)
+            const yMax = d3.max(data, d => {
+                return parseInt(d['收市'].replace(",", ""));
+            });
+            console.log(yMax)
+            //設定x,y軸的scale
+            const xScale = d3.scaleTime()
+                .domain([xMin, xMax])
+                .range([margin * 6, rwdSvgWidth - margin * 2])
+                .nice(); // X 軸繪製的viewport起點終點(寬度) 
+
+
+            const yScale = d3.scaleLinear()
+                .domain([0, yMax])
+                .range([rwdSvgHeight - margin * 4, margin])
+                .nice();
+            //設定x,y軸的axis
+            const xAxis = d3.axisBottom(xScale)
+                .ticks(6)
+                .tickFormat(d3.timeFormat("%m/%d/%y"))
+
+            const yAxis = d3.axisLeft(yScale)
+                .ticks(6)
+                .tickFormat(function (d) {
+                    //調整標籤樣式
+                    return `$${d} `;
+                })
+
+
+            //呼叫繪製x,y軸並移動
+            const xAxisGroup = svg_lineChart.append("g")
+                .call(xAxis)
+                .attr("transform", `translate(0,${rwdSvgHeight - margin * 4})`)
+                .attr("stroke-width", 1.2)
+                .style("font-size", "12px")
+                .selectAll("text")
+                .attr("dx", margin * 0.5)
+                .attr("dy", margin * 2)
+                .attr('transform', 'rotate(30)');
+
+            const yAxisGroup = svg_lineChart.append("g")
+                .call(yAxis)
+                .attr("transform", `translate(${margin * 6},0)`)
+                .attr("stroke-width", 1.2)
+                .style("font-size", "12px");
+
+
+            drawLine(data)
+            function drawLine(data) {
+
+                //繪製折線
+                const line = d3.line()
+                    .x(d => {
+                        return xScale(parseTime(d['日期']));
+                    })
+                    .y(d => {
+                        return yScale(parseFloat(d.收市.replace(",", "")));
+                    })
+                // console.log(line)
+
+                const lines = svg_lineChart.append('path')
+                    .data([data])
+                    .attr("d", line)
+                    .attr("fill", "none")
+                    .attr("stroke", '#344648')//顏色可更換
+                    .attr("stroke-width", 4);
+
+
+                //加上圓點
+                svg_lineChart.append('g')
+                    .selectAll('circle')
+                    .data(data)
+                    .enter()
+                    .append('circle')
+                    .attr('r', 1.5)
+                    .attr('cx', function (d) {
+                        return xScale(parseTime(d.日期))
+                    })
+                    .attr('cy', function (d) {
+                        return yScale(parseFloat(d.收市.replace(",", "")))
+                    })
+                    .attr('fill', "#344648")
+                    .attr("stroke-width", 0)
+                    .on("mouseover", function (d) {
+                        //tooltip
+                        var tooltip_lineChart = d3.select(".lineChart").append("div")
+                            .attr("class", "tooltip_lineChart")
+                            .style("opacity", 0)
+                            .style('position', 'absolute')
+                            .style("background-color", "#f4f2f3")
+                            .style("border", "2px solid black")
+                            .style("border-radius", "6px")
+                            .style("padding", "4px")
+                        tooltip_lineChart.transition()
+                            .duration(100)
+                            .style("opacity", .9)
+
+                        // 圓點放大
+                        d3.select(this)
+                            .attr("cursor", "pointer")
+                            .attr("r", 5)
+                            .attr("fill", "#ffbb98")
+
+                        tooltip_lineChart
+                            .html(`日期:<br>${d.日期}  <br>  收盤:<br>${d.收市} <br> 變更:<br>${d["更改%"]}`)
+                            // .style("left", (d3.event.pageX) + "px")
+                            .style("top", (d3.event.pageY) + "px")
+                            .style("left", d3.event.pageX + "px")
+                            .style("transform", "translateX(-100%)");
+
+                    })
+                    .on("mouseout", function () {
+                        d3.select(".tooltip_lineChart").remove();
+
+                        // 圓點縮小
+                        d3.select(this)
+                            .attr("cursor", "default")
+                            .attr("r", 1.5)
+                            .attr("fill", "#344648")
+                            .attr("stroke-width", 0);
+                    });
+            }
+
+
+        }
+
+        function drawDescription(country, event) {
+            //先移除原本的svg
+            d3.selectAll(".tooltip_description").remove()
+            // RWD 的svg 寬高
+
+            d3.select(".description").append("div").html("重新選擇國家").style("border", "0")
+            .style("padding", "0").style("box-shadow", "none")
+            .style("background-color","#ffbb98").style("width", "23%").attr("class", "tooltip_description")
+            .on("click",function(){
+                location.reload()
+            })
+
+            d3.json(`${country}\\分析.json`).then(function (d) {
+                tooltip_desciption = d3.select(".description")
+                    .style("overflow-y", "scroll")
+                    .style("height", "30%")
+                    .append("div")
+                    .attr("class", "tooltip_description")
+                    .style("opacity", 0.9)
+                    .style("border", "0").style("padding", "0").style("box-shadow", "none")
+                    .style("background-color", "#f4f2f3")
+                    .html("<b>事件:" + d[event]["name"] + "</b><br>整理分析:<br>" + d[event].describe)
+            })
+
+
+        }
+
+
+
+
+    </script>
+
+
+</body>
+
+</html>

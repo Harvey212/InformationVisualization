@@ -1,0 +1,43 @@
+[
+	{"latitude": 23.6978, "longitude": 120.9605,"country":"台灣",
+		"events": [
+            { "name": "次貸危機", "brief": "次貸危機", "date": "2008" },
+            { "name": "川普當選", "brief": "川普當選", "date": "2016" },
+            { "name": "中美貿易戰", "brief": "貿易戰", "date": "2018" }
+        ],
+		"dataset_stock":[{"name": "加權股價指數","brief": "加權股價" }, {"name": "0050","brief": "0050" }]},
+	{"latitude": 40.7128, "longitude": -74.0060,"country":"美國",
+		"events":[
+            { "name": "網路泡沫化", "brief": "網路泡沫", "date": "2000" },
+            { "name": "次貸危機", "brief": "次貸危機", "date": "2008" },
+            { "name": "歐債危機", "brief": "歐債", "date": "2011" },
+            { "name": "中美貿易戰", "brief": "貿易戰", "date": "2018" }
+        ],
+		"dataset_stock":[{"name": "道瓊工業","brief": "道瓊" }, {"name": "納斯達克（NASDAQ）","brief": "N" }, {"name": "S&P 500","brief": "S&P" }]},
+	{"latitude": 36.2048, "longitude": 138.2529,"country":"日本",
+		"events":[
+            { "name": "活力門事件", "brief": "活力門", "date": "2005" },
+            { "name": "次貸危機", "brief": "次貸危機", "date": "2008" },
+            { "name": "311大地震", "brief": "311", "date": "2011" },
+            { "name": "中美貿易戰", "brief": "貿易戰", "date": "2018" },
+            { "name": "歐債危機", "brief": "歐債", "date": "2011" }
+            
+        ],
+		"dataset_stock":[{"name": "日經指數","brief": "日經" },{"name": "日本東證指數","brief": "日本東證" }]},
+	{"latitude": 51.1657, "longitude": 10.4515,"country":"歐洲",
+		"events":[
+            { "name": "次貸危機", "brief": "次貸危機", "date": "2008" },
+            { "name": "歐債危機", "brief": "歐債", "date": "2011" },
+            { "name": "英國脫歐", "brief": "脫歐", "date": "2016" },
+            { "name": "中美貿易戰", "brief": "貿易戰", "date": "2018" }
+        ],
+		"dataset_stock":[{"name": "英國FTSE100","brief": "英國" }, {"name": "法國CAC40","brief": "法國" }, {"name": "NQ德國指數","brief": "德國" }]},
+	{"latitude": 39.9042, "longitude": 116.4074,"country":"中國",
+		"events":[
+            { "name": "SARS", "brief": "SARS", "date": "2003" },
+            { "name": "中國資本緊縮", "brief": "資本緊縮", "date": "2010" },
+            { "name": "中國股災", "brief": "中國股災", "date": "2015" },
+            { "name": "中美貿易戰", "brief": "貿易戰", "date": "2018" }
+        ],
+		"dataset_stock":[{"name": "上證50","brief": "上證" }, {"name": "滬深300指數","brief": "滬深" }, {"name": "恒生指數","brief": "恒生" }]}
+]
