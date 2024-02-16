@@ -1,0 +1,318 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<script src="https://d3js.org/d3.v4.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson.min.js"></script>
+	<script src="https://d3js.org/d3-geo-projection.v1.min.js"></script>
+
+	<style>
+		.route {
+			fill: none;
+			opacity: 0.5;
+		}
+
+		.land {
+			fill: #a8ddb5;
+		}
+
+		.tradeMap {
+			background: #43a2ca;
+		}
+
+		.source-port {
+			fill: white;
+			stroke: darkgreen;
+			stroke-width: 2px;
+		}
+	</style>
+
+
+</head>
+
+<body>
+	<div class="tradeMap"> </div>
+	<button id="123">123</button>
+	<script>
+		var country = "China";
+		var year = 2003;
+		drawTradeMap(country, year)
+		function drawTradeMap(country, year) {
+			//stroke: #333;
+			//
+
+			// var col = "y_" + "2003";
+			// var country = "Taiwan";
+			// var dat = "Taiwan.csv";
+
+
+
+			var portsChina = {
+				Taiwan: { loc: [120.9605, 23.6978], off: [8, -8], co: "pink" },
+				US: { loc: [-123.365556, 48.428611], off: [8, -8], co: "orange" },
+				Japan: { loc: [139.653905, 35.455161], off: [8, -8], co: "slateblue" },
+				"China": { loc: [126.6424, 46.8625], off: [8, -8], co: "grey" },
+				Europe: { loc: [0, 48.8566], off: [8, -8], co: "green" },
+			};
+
+			var portsEurope = {
+				Taiwan: { loc: [120.9605, 23.6978], off: [8, -8], co: "pink" },
+				US: { loc: [-123.365556, 48.428611], off: [8, -8], co: "orange" },
+				Japan: { loc: [139.653905, 35.455161], off: [8, -8], co: "slateblue" },
+				China: { loc: [126.6424, 46.8625], off: [8, -8], co: "green" },
+				"Europe": { loc: [0, 48.8566], off: [8, -8], co: "grey" },
+			};
+
+			var portsJapan = {
+				Taiwan: { loc: [120.9605, 23.6978], off: [8, -8], co: "pink" },
+				US: { loc: [-123.365556, 48.428611], off: [8, -8], co: "orange" },
+				"Japan": { loc: [139.653905, 35.455161], off: [8, -8], co: "grey" },
+				China: { loc: [126.6424, 46.8625], off: [8, -8], co: "slateblue" },
+				Europe: { loc: [0, 48.8566], off: [8, -8], co: "green" },
+			};
+
+			var portsTaiwan = {
+				"Taiwan": { loc: [120.9605, 23.6978], off: [8, -8], co: "grey" },
+				US: { loc: [-123.365556, 48.428611], off: [8, -8], co: "pink" },
+				Japan: { loc: [139.653905, 35.455161], off: [8, -8], co: "orange" },
+				China: { loc: [126.6424, 46.8625], off: [8, -8], co: "slateblue" },
+				Europe: { loc: [0, 48.8566], off: [8, -8], co: "green" },
+			};
+
+			var portsUS = {
+				Taiwan: { loc: [120.9605, 23.6978], off: [8, -8], co: "pink" },
+				"US": { loc: [-123.365556, 48.428611], off: [8, -8], co: "grey" },
+				Japan: { loc: [139.653905, 35.455161], off: [8, -8], co: "orange" },
+				China: { loc: [126.6424, 46.8625], off: [8, -8], co: "slateblue" },
+				Europe: { loc: [0, 48.8566], off: [8, -8], co: "green" },
+			};
+
+			// var ports = portsTaiwan;
+
+			var col;
+			var dat;
+			var ports;
+
+			get_comtrade_data(country, year)
+
+			function get_comtrade_data(country, year) {
+				col = "y_" + year;
+				dat = d3.csv(`TradeMap\\${country}.csv`)
+				if (country == "China") {
+					ports = portsChina;
+				}
+
+				if (country == "Europe") {
+					ports = portsEurope;
+				}
+
+				if (country == "Japan") {
+					ports = portsJapan;
+				}
+
+				if (country == "Taiwan") {
+					ports = portsTaiwan;
+				}
+
+				if (country == "US") {
+					//console.log(portsUS);
+					ports = portsUS;
+				}
+
+
+			}
+
+			// A function that update the color of the circle
+			function updateChart(myyear) {
+				col = "y_" + myyear;
+				updateGraph(col);
+			}
+
+
+			var width = parseInt(d3.select('.tradeMap').style('width'));
+			var height = width * 0.58;
+
+			var projection = d3.geoKavrayskiy7()
+				//.scale(302)
+				.rotate([190, 10])
+				.translate([width / 2, height / 2])
+				.precision(0.1);
+
+			var path = d3.geoPath().projection(projection);
+			var svg_tradeMap = d3.select('.tradeMap').append("svg")
+				.attr("width", width)
+				.attr("height", height)
+				.attr("class", "tradeMap");
+
+			// Create a few groups to layer elements correctly
+			var g1 = svg_tradeMap.append("g");
+			var g2 = svg_tradeMap.append("g");
+
+			d3.json("https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-110m.json", function (error, world) {
+				g1.insert("path")
+					.datum(topojson.feature(world, world.objects.land))
+					//.transition()
+					//.duration(1000)
+					.attr("class", "land")
+					.attr("d", path);
+
+				g2.append("circle")
+					//.transition()
+					//.duration(1000)
+					.attr("cx", function () { return projection(ports[country].loc)[0]; })
+					.attr("cy", function () { return projection(ports[country].loc)[1]; })
+					.attr("r", 6)
+					.attr("class", "source-port");
+
+				g2.append("text")
+					//.transition()
+					//.duration(1000)
+					.attr("x", function () { return projection(ports[country].loc)[0] + 10; })
+					.attr("y", function () { return projection(ports[country].loc)[1] + 0; })
+					.text(country);
+
+				drawTrade(country, col);
+
+			});
+
+			d3.select("button").on("click",function(){
+						alert(col)
+						updateChart(2004)
+						alert(col)
+					} )
+			// Draw a set of routes 
+			function drawTrade(country, col) {
+
+				d3.csv(`TradeMap\\${country}.csv`, function (error, routes) {
+					var maxVolume = d3.max(routes, function (d) { return d[col]; });
+
+
+					routePath = g1.selectAll(".route")
+						.data(routes)
+						.enter()
+						.append("path")
+						//.transition()
+						//.duration(1000)
+						.attr("class", "route")
+						.style("stroke-width", function (d) {
+							return 50 * d[col];
+						})
+						.style("stroke", function (d) {
+							return ports[d.destination].co;
+						})
+						.attr('d', function (d) {
+							return path({
+								type: "LineString",
+								coordinates: [ports[country].loc, ports[d.destination].loc]
+							});
+						})
+
+					portMarkers = g1.selectAll(".ports")
+						.data(routes)
+						.enter()
+						.append("circle")
+						//.transition()
+						//.duration(1000)
+						.attr("class", "ports")
+						.attr("cx", function (d) { return projection(ports[d.destination].loc)[0] })
+						.attr("cy", function (d) { return projection(ports[d.destination].loc)[1] })
+						.attr("r", function (d) { return d[col] * 25 })
+						.style("fill", "white")
+						.style("stroke-width", 2)
+						.style("stroke", "red");
+
+					portLabels = g2.selectAll(".port-labels")
+						.data(routes)
+						.enter()
+						.append("text")
+						//.transition()
+						//.duration(1000)
+						.attr("x", function (d) { return projection(ports[d.destination].loc)[0] + ports[d.destination].off[0] })
+						.attr("y", function (d) { return projection(ports[d.destination].loc)[1] - ports[d.destination].off[1] })
+						.text(function (d) { return d.destination })
+						.attr("class", "port-label");
+				});
+			}
+
+
+			function updateGraph(col) {
+
+				svg_tradeMap.selectAll(".source-port")
+					.transition()
+					.attr("cx", function () { return projection(ports[country].loc)[0]; })
+					.attr("cy", function () { return projection(ports[country].loc)[1]; })
+					.attr("r", 6);
+
+				d3.csv(`TradeMap\\${country}.csv`, function (error, routes) {
+
+					///////////////////////////////////////////////////////
+					var maxVolume = d3.max(routes, function (d) { return d[col]; });
+
+					//console.log(maxVolume);
+
+					////////////////////////////////////////////////////////////////////
+					var u = svg_tradeMap.selectAll(".route").data(routes);
+					//console.log(col);
+
+					var routePath = u.enter()
+						.append("path")
+						.merge(u)
+						.transition()
+						.duration(1000)
+						//.attr("class","route")
+						.style("stroke-width", function (d) {
+							return 50 * d[col];
+						})
+						.style("stroke", function (d) {
+							return ports[d.destination].co;
+						})
+						.attr('d', function (d) {
+							return path({
+								type: "LineString",
+								coordinates: [ports[country].loc, ports[d.destination].loc]
+							});
+						});
+
+
+					////////////////////////////////////////////////////////
+					var u2 = svg_tradeMap.selectAll(".ports").data(routes);
+
+
+					var portMarkers = u2.enter()
+						.append("circle")
+						.merge(u2)
+						.transition()
+						.duration(1000)
+						//.attr("class","ports")
+						.attr("cx", function (d) { return projection(ports[d.destination].loc)[0] })
+						.attr("cy", function (d) { return projection(ports[d.destination].loc)[1] })
+						.attr("r", function (d) { return d[col] * 25 })//
+						.style("fill", "white")
+						.style("stroke-width", 2)
+						.style("stroke", "red");
+
+					
+					//////////////////////////////////////////////////////////////
+					//var u3=svg_tradeMap.selectAll(".port-labels").data(routes);
+
+					//var portLabels = u3.enter()
+					//					.append("text")
+					//					.merge(u3)
+					//					.transition()
+					//					//.duration(1000)
+					//					.attr("x", function(d) { return projection(ports[d.destination].loc)[0] + ports[d.destination].off[0] } )
+					//					.attr("y", function(d) { return projection(ports[d.destination].loc)[1] - ports[d.destination].off[1] } )
+					//					.text(function(d) { return d.destination })
+					//					.attr("class","port-label");
+
+
+					/////////////////////////////////////////////////////
+				});
+			}
+
+		}
+	</script>
+
+</body>
+
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<script src="https://d3js.org/d3.v4.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson.min.js"></script>
+	<script src="https://d3js.org/d3-geo-projection.v1.min.js"></script>
+
+<style>
+
+
+	.route {
+		fill: none;
+		opacity: 0.5;
+	}
+
+	.land { fill:#344648; }
+	
+	svg { background: #f4f2f3; }
+
+	.source-port {
+		fill: white; 
+		stroke: darkgreen; 
+		stroke-width: 2px;
+		
+	}
+</style>
+
+	
+</head>
+<body>
+	<div id="map"> </div>
+	<div id="scro"></div>
+	<script>
+		//stroke: #333;
+		//
+
+		var col = "y_"+"2003";
+		var tar="Taiwan";
+		var dat="Taiwan.csv";
+
+		var allGroup = ["2003", "2004", "2005", "2006", "2007", "2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021"]
+		/////////////////////////////////////////////////////////
+		var dropdownButton = d3.select("#scro")
+  		.append('select')
+
+		// add the options to the button
+		dropdownButton // Add a button
+  		.selectAll('myOptions') // Next 4 lines add 6 options = 6 colors
+ 		.data(allGroup)
+  		.enter()
+		.append('option')
+  		.text(function (d) { return d; }) // text showed in the menu
+  		.attr("value", function (d) { return d; }) // corresponding value returned by the butto
+
+  		// When the button is changed, run the updateChart function
+		dropdownButton.on("change", function(d) {
+
+    	// recover the option that has been chosen
+    	var selectedOption = d3.select(this).property("value")
+
+    	// run the updateChart function with this selected option
+    	updateChart(selectedOption)
+		})
+
+		// A function that update the color of the circle
+		function updateChart(myyear) {
+  		col = "y_"+myyear;
+  		//var col="y_"+"2004";
+  		//console.log(col);
+  		updateGraph();
+		}
+
+
+
+		////////////////////////////////////////////////
+
+		var data1="China.csv";
+		var data2="Europe.csv";
+		var data3="Japan.csv";
+		var data4="Taiwan.csv";
+		var data5="US.csv";
+
+
+
+		var portsChina={
+		Taiwan:{loc:[120.9605,23.6978],off:[8,-8],co:"pink"},
+		US:{loc:[-123.365556,48.428611],off:[8,-8],co:"orange"},
+		Japan:{loc:[139.653905,35.455161],off:[8,-8],co:"slateblue"},
+		"China":{loc:[126.6424,46.8625],off:[8,-8],co:"grey"},
+		Europe:{loc:[0,48.8566],off:[8,-8],co:"green"},
+	};
+
+	var portsEurope={
+		Taiwan:{loc:[120.9605,23.6978],off:[8,-8],co:"pink"},
+		US:{loc:[-123.365556,48.428611],off:[8,-8],co:"orange"},
+		Japan:{loc:[139.653905,35.455161],off:[8,-8],co:"slateblue"},
+		China:{loc:[126.6424,46.8625],off:[8,-8],co:"green"},
+		"Europe":{loc:[0,48.8566],off:[8,-8],co:"grey"},
+	};
+
+	var portsJapan={
+		Taiwan:{loc:[120.9605,23.6978],off:[8,-8],co:"pink"},
+		US:{loc:[-123.365556,48.428611],off:[8,-8],co:"orange"},
+		"Japan":{loc:[139.653905,35.455161],off:[8,-8],co:"grey"},
+		China:{loc:[126.6424,46.8625],off:[8,-8],co:"slateblue"},
+		Europe:{loc:[0,48.8566],off:[8,-8],co:"green"},
+	};
+
+	var portsTaiwan={
+		"Taiwan":{loc:[120.9605,23.6978],off:[8,-8],co:"grey"},
+		US:{loc:[-123.365556,48.428611],off:[8,-8],co:"pink"},
+		Japan:{loc:[139.653905,35.455161],off:[8,-8],co:"orange"},
+		China:{loc:[126.6424,46.8625],off:[8,-8],co:"slateblue"},
+		Europe:{loc:[0,48.8566],off:[8,-8],co:"green"},
+	};
+
+	var portsUS={
+		Taiwan:{loc:[120.9605,23.6978],off:[8,-8],co:"pink"},
+		"US":{loc:[-123.365556,48.428611],off:[8,-8],co:"grey"},
+		Japan:{loc:[139.653905,35.455161],off:[8,-8],co:"orange"},
+		China:{loc:[126.6424,46.8625],off:[8,-8],co:"slateblue"},
+		Europe:{loc:[0,48.8566],off:[8,-8],co:"green"},
+	};
+
+	var ports=portsTaiwan;
+	
+var width = 950; var height = 650;
+
+var projection = d3.geoKavrayskiy7()
+	//.scale(302)
+	.rotate([190,10])
+	.translate([width/2,height/2])
+	.precision(0.1);
+
+var path = d3.geoPath().projection(projection);
+var svg = d3.select("#map").append("svg")
+	.attr("width", width)
+	.attr("height", height);
+svg.append("g").append("text").text("各國出口權重圖").attr("x",width/2).attr("y","30px").style("font-weight","bold")		
+// Create a few groups to layer elements correctly
+var g1 = svg.append("g");  
+var g2 = svg.append("g"); 
+
+d3.json("https://gist.githubusercontent.com/mbostock/4090846/raw/d534aba169207548a8a3d670c9c2cc719ff05c47/world-110m.json",function(error,world) {
+	g1.insert("path")
+		.datum(topojson.feature(world, world.objects.land))
+		//.transition()
+    	//.duration(1000)
+		.attr("class", "land")
+		.attr("d", path);
+		
+	g2.append("circle")
+		//.transition()
+    	//.duration(1000)
+		.attr("cx", function() { return projection(ports[tar].loc)[0];})
+		.attr("cy", function() { return projection(ports[tar].loc)[1];})
+		.attr("r",6)
+		.attr("class","source-port");
+	
+	g2.append("text")
+		//.transition()
+    	//.duration(1000)
+		.attr("x", function() { return projection(ports[tar].loc)[0] + 10;})
+		.attr("y", function() { return projection(ports[tar].loc)[1] + 0;})
+		.text(tar);
+		
+	drawTrade();
+	});
+	
+// Draw a set of routes 
+function drawTrade() {
+	d3.csv(dat, function (error, routes) {
+		var maxVolume = d3.max(routes, function(d) { return d[col]; });
+					
+		routePath = g1.selectAll(".route")
+			.data(routes)
+			.enter()
+			.append("path")
+			//.transition()
+    		//.duration(1000)
+			.attr("class","route")
+			.style("stroke-width", function(d) { 
+				return 50 * d[col];
+			})
+			.style("stroke",function(d) { 
+						return ports[d.destination].co;
+						})
+			.attr('d', function(d) {
+				return path ({ 
+				type:"LineString",
+				coordinates: [ ports[tar].loc,ports[d.destination].loc ]
+				});
+			})
+
+		portMarkers = g1.selectAll(".ports")
+			.data(routes)
+			.enter()
+			.append("circle")
+			//.transition()
+    		//.duration(1000)
+			.attr("class","ports")
+			.attr("cx", function(d) { return projection(ports[d.destination].loc)[0] } )
+			.attr("cy", function(d) { return projection(ports[d.destination].loc)[1] } )
+			.attr("r", function(d) { return d[col] * 25 })
+			.style("fill","white")
+			.style("stroke-width",2)
+			.style("stroke","#ffbb98");
+		
+		portLabels = g2.selectAll(".port-labels")
+			.data(routes)
+			.enter()
+			.append("text")
+			//.transition()
+    		//.duration(1000)
+			.attr("x", function(d) { return projection(ports[d.destination].loc)[0] + ports[d.destination].off[0] } )
+			.attr("y", function(d) { return projection(ports[d.destination].loc)[1] - ports[d.destination].off[1] } )
+			.text(function(d) { return d.destination })
+			.attr("class","port-label");
+		});
+	}
+
+	function updateData(mydata,ind) 
+	{
+		dat=mydata;
+		//console.log(mydata);
+		//console.log(ind);
+
+		if(ind==1)
+		{	
+			//console.log(portsChina);
+			ports=portsChina;
+			tar="China";
+		}
+
+		if(ind==2)
+		{
+			//console.log(portsEurope);
+			ports=portsEurope;
+			tar="Europe";
+		}
+
+		if(ind==3)
+		{
+			//console.log(portsJapan);
+			ports=portsJapan;
+			tar="Japan";
+		}
+
+		if(ind==4)
+		{
+			//console.log(portsTaiwan);
+			ports=portsTaiwan;
+			tar="Taiwan";
+		}
+
+		if(ind==5)
+		{
+			//console.log(portsUS);
+			ports=portsUS;
+			tar="US";
+		}
+
+		
+		updateGraph();
+
+	}
+
+	function updateGraph()
+	{
+
+		
+
+		svg.selectAll(".source-port")   
+            .transition()
+            .attr("cx", function() { return projection(ports[tar].loc)[0];})
+			.attr("cy", function() { return projection(ports[tar].loc)[1];})
+			.attr("r",6);
+
+		d3.csv(dat, function (error, routes) {
+
+		///////////////////////////////////////////////////////
+		var maxVolume = d3.max(routes, function(d) { return d[col]; });
+
+		//console.log(maxVolume);
+		
+		////////////////////////////////////////////////////////////////////
+		var u=svg.selectAll(".route").data(routes);
+		//console.log(col);
+
+		var routePath = u.enter()
+						.append("path")
+						.merge(u)
+						.transition()
+    					.duration(1000)
+						//.attr("class","route")
+						.style("stroke-width", function(d) { 
+						return 50 * d[col];
+						})
+						.style("stroke",function(d) { 
+						return ports[d.destination].co;
+						})
+						.attr('d', function(d) {
+							return path ({ 
+							type:"LineString",
+							coordinates: [ports[tar].loc,ports[d.destination].loc]
+							});
+						});
+
+
+		////////////////////////////////////////////////////////
+		var u2=svg.selectAll(".ports").data(routes);
+
+
+		var portMarkers = u2.enter()
+							.append("circle")
+							.merge(u2)
+							.transition()
+    						.duration(1000)
+							//.attr("class","ports")
+							.attr("cx", function(d) { return projection(ports[d.destination].loc)[0] } )
+							.attr("cy", function(d) { return projection(ports[d.destination].loc)[1] } )
+							.attr("r", function(d) { return d[col]*25})//
+							.style("fill","white")
+							.style("stroke-width",2)
+							.style("stroke","#ffbb98");
+
+
+		//////////////////////////////////////////////////////////////
+		//var u3=svg.selectAll(".port-labels").data(routes);
+		
+		//var portLabels = u3.enter()
+		//					.append("text")
+		//					.merge(u3)
+		//					.transition()
+    	//					//.duration(1000)
+		//					.attr("x", function(d) { return projection(ports[d.destination].loc)[0] + ports[d.destination].off[0] } )
+		//					.attr("y", function(d) { return projection(ports[d.destination].loc)[1] - ports[d.destination].off[1] } )
+		//					.text(function(d) { return d.destination })
+		//					.attr("class","port-label");
+
+
+		/////////////////////////////////////////////////////
+		});
+		}
+
+	
+	</script>
+	<button onclick="updateData(data1,1)">China</button>
+	<button onclick="updateData(data2,2)">Europe</button>
+	<button onclick="updateData(data3,3)">Japan</button>
+	<button onclick="updateData(data4,4)">Taiwan</button>
+	<button onclick="updateData(data5,5)">US</button>
+
+</body>
+</html>
